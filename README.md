@@ -1,3 +1,3 @@
 # Classman API
 
-This is the Classman API project.
+This is the Classman API service.
