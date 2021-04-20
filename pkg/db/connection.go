@@ -3,10 +3,13 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -30,7 +33,20 @@ func connect() {
 
 	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable", conf.DBHost, conf.DBUser, conf.DBPassword, conf.DBName, conf.DBPort)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// ! Remove in production
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold:             time.Second, // Slow SQL threshold
+			LogLevel:                  logger.Info, // Log level
+			IgnoreRecordNotFoundError: false,       // Ignore ErrRecordNotFound error for logger
+			Colorful:                  true,        // Disable color
+		},
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
