@@ -12,4 +12,5 @@ func migrate() {
 	}
 
 	DB.AutoMigrate(&model.Account{})
+	DB.AutoMigrate(&model.Class{})
 }
