@@ -1,0 +1,9 @@
+name: classman-api
+kind: pipeline
+type: kubernetes
+
+steps:
+  - name: build
+    image: golang:alpine
+    commands:
+      - go build ./cmd/service/
