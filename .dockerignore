@@ -22,5 +22,8 @@
 **/secrets.dev.yaml
 **/values.dev.yaml
 README.md
+.drone.yml
 
 **/dev
+**/scripts
+**/docs
