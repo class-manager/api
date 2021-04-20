@@ -16,4 +16,5 @@ func migrate() {
 	DB.AutoMigrate(&model.Student{})
 	DB.AutoMigrate(&model.Lesson{})
 	DB.AutoMigrate(&model.BehaviourNote{})
+	DB.AutoMigrate(&model.Task{})
 }
