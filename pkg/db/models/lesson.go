@@ -14,5 +14,5 @@ type Lesson struct {
 	StartTime   time.Time `gorm:"not null"`
 	EndTime     time.Time `gorm:"not null"`
 	Class       Class     `gorm:"constraint:OnDelete:CASCADE"`
-	ClassID     uuid.UUID
+	ClassID     uuid.UUID `gorm:"index:; not null"`
 }

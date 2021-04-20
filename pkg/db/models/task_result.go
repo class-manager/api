@@ -7,7 +7,7 @@ type TaskResult struct {
 	BaseModel
 	Mark      float64   `gorm:"not null"`
 	Student   Student   `gorm:"constraint:OnDelete:CASCADE"`
-	StudentID uuid.UUID `gorm:"not null"`
+	StudentID uuid.UUID `gorm:"index:; not null"`
 	Task      Task      `gorm:"constraint:OnDelete:CASCADE"`
-	TaskID    uuid.UUID `gorm:"not null"`
+	TaskID    uuid.UUID `gorm:"index:; not null"`
 }
