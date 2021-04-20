@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
+var Conn *gorm.DB
 
 type envConfig struct {
 	DBHost     string
@@ -51,5 +51,5 @@ func connect() {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
 
-	DB = db
+	Conn = db
 }

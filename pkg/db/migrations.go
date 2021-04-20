@@ -6,16 +6,17 @@ import (
 
 // TODO: Implement
 func migrate() {
-	result := DB.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+	result := Conn.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 	if result.Error != nil {
 		panic(result.Error)
 	}
 
-	DB.AutoMigrate(&model.Account{})
-	DB.AutoMigrate(&model.Class{})
-	DB.AutoMigrate(&model.Student{})
-	DB.AutoMigrate(&model.Lesson{})
-	DB.AutoMigrate(&model.BehaviourNote{})
-	DB.AutoMigrate(&model.Task{})
-	DB.AutoMigrate(&model.TaskResult{})
+	Conn.AutoMigrate(&model.Account{})
+	Conn.AutoMigrate(&model.Class{})
+	Conn.AutoMigrate(&model.Student{})
+	Conn.AutoMigrate(&model.Lesson{})
+	Conn.AutoMigrate(&model.BehaviourNote{})
+	Conn.AutoMigrate(&model.Task{})
+	Conn.AutoMigrate(&model.TaskResult{})
+	Conn.AutoMigrate(&model.RefreshToken{})
 }

@@ -1,4 +1,4 @@
-package jwt
+package security
 
 import (
 	"encoding/hex"

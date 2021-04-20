@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/class-manager/api/pkg/util/jwt"
+	"github.com/class-manager/api/pkg/util/security"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,7 +23,7 @@ func Protected(c *fiber.Ctx) error {
 	}
 
 	// Validate token
-	valid, claims := jwt.ValidateJWT([]byte(t))
+	valid, claims := security.ValidateJWT([]byte(t))
 	if !valid {
 		return c.SendStatus(http.StatusForbidden)
 	}
