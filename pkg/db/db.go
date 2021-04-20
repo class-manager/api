@@ -4,4 +4,7 @@ package db
 func Initialise() {
 	// Connect to the database
 	connect()
+
+	// Run automatic migrations for all schemas
+	migrate()
 }
