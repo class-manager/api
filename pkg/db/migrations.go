@@ -17,4 +17,5 @@ func migrate() {
 	DB.AutoMigrate(&model.Lesson{})
 	DB.AutoMigrate(&model.BehaviourNote{})
 	DB.AutoMigrate(&model.Task{})
+	DB.AutoMigrate(&model.TaskResult{})
 }
