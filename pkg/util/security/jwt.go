@@ -1,7 +1,6 @@
 package security
 
 import (
-	"encoding/hex"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -16,7 +15,7 @@ import (
 func CreateJWT(uid uuid.UUID, validFor time.Duration, customClaims map[string]interface{}) []byte {
 	var claims jwt.Claims
 
-	mergedClaims := map[string]interface{}{"uid": hex.EncodeToString(uid.Bytes())}
+	mergedClaims := map[string]interface{}{"uid": uid.String()}
 	for k, v := range customClaims {
 		mergedClaims[k] = v
 	}

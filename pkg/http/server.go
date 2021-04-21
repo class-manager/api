@@ -11,6 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+
+	api_v1 "github.com/class-manager/api/pkg/http/api/v1"
 )
 
 func Start() {
@@ -56,4 +58,6 @@ func registerV1Routes(r fiber.Router) {
 		return c.SendStatus(http.StatusOK)
 	})
 
+	r.Post("/auth/login", api_v1.Login)
+	r.Post("/accounts/register", api_v1.Register)
 }

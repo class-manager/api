@@ -2,7 +2,8 @@ package security
 
 import (
 	"crypto/rand"
-	"encoding/base32"
+	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/class-manager/api/pkg/db"
@@ -38,7 +39,7 @@ func createRefreshToken(uid uuid.UUID) (string, error) {
 	rand.Read(tokenStringBytes)
 
 	token := &model.RefreshToken{
-		Token:      base32.StdEncoding.EncodeToString(tokenStringBytes)[:31],
+		Token:      fmt.Sprintf("crt_%v", hex.EncodeToString(tokenStringBytes)[:27]),
 		AccountID:  uid,
 		Expiration: time.Now().Add(refreshTokenDuration),
 	}
@@ -59,10 +60,10 @@ func AddRefreshTokenCookie(c *fiber.Ctx, uid uuid.UUID) error {
 	}
 
 	// Clear previous cookie
-	c.ClearCookie("r_")
+	c.ClearCookie("crt_")
 
 	c.Cookie(&fiber.Cookie{
-		Name:     "r_",
+		Name:     "crt_",
 		Value:    rt,
 		Expires:  time.Now().Add(refreshTokenDuration),
 		HTTPOnly: true,

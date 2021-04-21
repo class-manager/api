@@ -3,9 +3,11 @@ module github.com/class-manager/api
 go 1.16
 
 require (
+	github.com/go-playground/validator/v10 v10.5.0
 	github.com/gofiber/fiber/v2 v2.8.0
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/klauspost/compress v1.12.1 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/pascaldekloe/jwt v1.10.0
 	github.com/spf13/viper v1.7.1
 	github.com/valyala/tcplisten v1.0.0 // indirect
