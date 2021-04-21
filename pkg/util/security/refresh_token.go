@@ -67,7 +67,7 @@ func AddRefreshTokenCookie(c *fiber.Ctx, uid uuid.UUID) error {
 		Value:    rt,
 		Expires:  time.Now().Add(refreshTokenDuration),
 		HTTPOnly: true,
-		SameSite: "Strict",
+		SameSite: "None",
 		// Domain:   "",
 		// Secure:   true,
 	})
@@ -82,7 +82,7 @@ func ClearRefreshCookie(c *fiber.Ctx) {
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		HTTPOnly: true,
-		SameSite: "Strict",
+		SameSite: "None",
 		// Domain:   "",
 		// Secure:   true,
 	})
