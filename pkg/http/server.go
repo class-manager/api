@@ -44,7 +44,10 @@ func registerMiddleware(app *fiber.App) {
 	app.Use(compress.New())
 
 	// CORS
-	app.Use(cors.New(cors.Config{}))
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowCredentials: true,
+	}))
 }
 
 func registerRoutes(app *fiber.App) {
