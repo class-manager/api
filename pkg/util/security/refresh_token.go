@@ -20,9 +20,9 @@ const refreshTokenDuration = time.Hour * 24 * 7
 // Specify clear=true if the token should be invalidated.
 func ValidateRefreshToken(tokenString string, clear bool) (bool, *model.Account) {
 	token := new(model.RefreshToken)
-	db.Conn.Preload("Account").Where(&model.RefreshToken{Token: tokenString}).First(token)
+	res := db.Conn.Preload("Account").Where(&model.RefreshToken{Token: tokenString}).First(token)
 
-	if token == nil {
+	if res.RowsAffected == 0 {
 		return false, nil
 	}
 
@@ -60,7 +60,7 @@ func AddRefreshTokenCookie(c *fiber.Ctx, uid uuid.UUID) error {
 	}
 
 	// Clear previous cookie
-	c.ClearCookie("crt_")
+	ClearRefreshCookie(c)
 
 	c.Cookie(&fiber.Cookie{
 		Name:     "crt_",
@@ -73,4 +73,17 @@ func AddRefreshTokenCookie(c *fiber.Ctx, uid uuid.UUID) error {
 	})
 
 	return nil
+}
+
+// ClearRefreshCookie clears the refresh token cookie.
+func ClearRefreshCookie(c *fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "crt_",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HTTPOnly: true,
+		SameSite: "Strict",
+		// Domain:   "",
+		// Secure:   true,
+	})
 }
