@@ -7,5 +7,6 @@ import (
 
 func Logout(c *fiber.Ctx) error {
 	security.ClearRefreshCookie(c)
+
 	return nil
 }
