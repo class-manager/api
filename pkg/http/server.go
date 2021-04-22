@@ -63,5 +63,6 @@ func registerV1Routes(r fiber.Router) {
 
 	r.Post("/auth/login", api_v1.Login)
 	r.Post("/auth/reauth", api_v1.Reauth)
+	r.Post("/auth/logout", api_v1.Logout)
 	r.Post("/accounts/register", api_v1.Register)
 }
