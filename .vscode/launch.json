@@ -13,7 +13,8 @@
             "env": {
                 "DB_HOST": "localhost",
                 "DB_NAME": "classman_dev",
-                "DB_PASSWORD": "password"
+                "DB_PASSWORD": "password",
+                "JWT_KEY": "ae31c44817d0a59a8dc857cf1b98a7411eeffc2a3994de042bd8dd7329fdc835"
             }
         }
     ]

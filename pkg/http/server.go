@@ -71,4 +71,5 @@ func registerV1Routes(r fiber.Router) {
 	r.Get("/dashboard", middleware.Protected, api_v1.GetDashboardInfo)
 
 	r.Post("/classes", middleware.Protected, api_v1.CreateClass)
+	r.Post("/classes/:classid/tasks", middleware.Protected, api_v1.CreateTask)
 }

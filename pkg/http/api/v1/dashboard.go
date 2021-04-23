@@ -12,8 +12,15 @@ type dashboardClass struct {
 	Subject string `json:"subject"`
 }
 
+type dashboardTask struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Class string `json:"class"`
+}
+
 type getDashboardReturnPayload struct {
 	Classes []*dashboardClass `json:"classes"`
+	Tasks   []*dashboardTask  `json:"tasks"`
 }
 
 // GetDashboardInfo returns the Classman dashboard info
@@ -21,7 +28,7 @@ func GetDashboardInfo(c *fiber.Ctx) error {
 	uid := c.Locals("uid")
 
 	classes := new([]model.Class)
-	db.Conn.Where("account_id = ?", uid).Find(classes)
+	classQuery := db.Conn.Where("account_id = ?", uid).Find(classes)
 
 	returnClasses := make([]*dashboardClass, 0)
 
@@ -33,7 +40,21 @@ func GetDashboardInfo(c *fiber.Ctx) error {
 		})
 	}
 
+	tasks := new([]model.Task)
+	db.Conn.Model(&model.Task{}).Preload("Class").Where("class_id in (?)", classQuery.Select("id")).Find(tasks)
+
+	returnTasks := make([]*dashboardTask, 0)
+
+	for _, task := range *tasks {
+		returnTasks = append(returnTasks, &dashboardTask{
+			ID:    task.ID.String(),
+			Name:  task.Name,
+			Class: task.Class.Name,
+		})
+	}
+
 	return c.JSON(&getDashboardReturnPayload{
 		Classes: returnClasses,
+		Tasks:   returnTasks,
 	})
 }
