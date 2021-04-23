@@ -78,7 +78,9 @@ func AddRefreshTokenCookie(c *fiber.Ctx, uid uuid.UUID) error {
 // ClearRefreshCookie clears the refresh token cookie.
 func ClearRefreshCookie(c *fiber.Ctx) {
 	token := c.Cookies("crt_")
-	db.Conn.Delete(&model.RefreshToken{Token: token})
+	if token != "" {
+		db.Conn.Where("token = ?", token).Delete(&model.RefreshToken{})
+	}
 	db.Conn.Where("expiration < now()").Delete(&model.RefreshToken{})
 
 	c.Cookie(&fiber.Cookie{
