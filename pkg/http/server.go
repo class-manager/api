@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
 	api_v1 "github.com/class-manager/api/pkg/http/api/v1"
+	"github.com/class-manager/api/pkg/http/middleware"
 )
 
 func Start() {
@@ -64,5 +65,10 @@ func registerV1Routes(r fiber.Router) {
 	r.Post("/auth/login", api_v1.Login)
 	r.Post("/auth/reauth", api_v1.Reauth)
 	r.Post("/auth/logout", api_v1.Logout)
+
 	r.Post("/accounts/register", api_v1.Register)
+
+	r.Get("/dashboard", middleware.Protected, api_v1.GetDashboardInfo)
+
+	r.Post("/classes", middleware.Protected, api_v1.CreateClass)
 }
