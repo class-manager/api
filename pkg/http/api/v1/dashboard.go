@@ -28,7 +28,7 @@ func GetDashboardInfo(c *fiber.Ctx) error {
 	uid := c.Locals("uid")
 
 	classes := new([]model.Class)
-	classQuery := db.Conn.Where("account_id = ?", uid).Find(classes)
+	classQuery := db.Conn.Where("account_id = ?", uid).Order("subject_name ASC").Order("name ASC").Find(classes)
 
 	returnClasses := make([]*dashboardClass, 0)
 
@@ -41,7 +41,7 @@ func GetDashboardInfo(c *fiber.Ctx) error {
 	}
 
 	tasks := new([]model.Task)
-	db.Conn.Model(&model.Task{}).Preload("Class").Where("class_id in (?)", classQuery.Select("id")).Find(tasks)
+	db.Conn.Model(&model.Task{}).Preload("Class").Where("class_id in (?)", classQuery.Select("id")).Order("due_date ASC").Find(tasks)
 
 	returnTasks := make([]*dashboardTask, 0)
 

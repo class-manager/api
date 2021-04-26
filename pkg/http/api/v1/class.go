@@ -122,7 +122,7 @@ func getTasks(cid string, p *getClassPayload, wg *sync.WaitGroup) {
 	// Get task details
 	var tasks = new([]model.Task)
 	// TODO: Handle errors
-	db.Conn.Where("class_id = ?", cid).Find(tasks)
+	db.Conn.Where("class_id = ?", cid).Order("due_date ASC").Find(tasks)
 
 	returnTasks := make([]*taskClassDetails, 0)
 
@@ -144,7 +144,7 @@ func getLessons(cid string, p *getClassPayload, wg *sync.WaitGroup) {
 	// Get task details
 	var lessons = new([]model.Lesson)
 	// TODO: Handle errors
-	db.Conn.Where("class_id = ?", cid).Find(lessons)
+	db.Conn.Where("class_id = ?", cid).Order("start_time ASC").Find(lessons)
 
 	returnLessons := make([]*lessonClassDetails, 0)
 
