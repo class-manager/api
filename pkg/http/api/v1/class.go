@@ -160,3 +160,16 @@ func getLessons(cid string, p *getClassPayload, wg *sync.WaitGroup) {
 	p.Lessons = returnLessons
 	p.Unlock()
 }
+
+func DeleteClass(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+
+	res := db.Conn.Where("account_id = ?", uid).Where("id = ?", cid).Delete(&model.Class{})
+
+	if res.RowsAffected == 0 {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	return c.Status(http.StatusNoContent).Send(make([]byte, 0))
+}
