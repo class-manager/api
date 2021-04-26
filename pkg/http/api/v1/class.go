@@ -1,7 +1,10 @@
 package api_v1
 
 import (
+	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/class-manager/api/pkg/db"
 	model "github.com/class-manager/api/pkg/db/models"
@@ -40,4 +43,120 @@ func CreateClass(c *fiber.Ctx) error {
 		Name:    nc.Name,
 		Subject: nc.SubjectName,
 	})
+}
+
+type getClassPayload struct {
+	sync.Mutex
+	Name     string                `json:"name"`
+	Subject  string                `json:"subject"`
+	Lessons  []*lessonClassDetails `json:"lessons"`
+	Students []*studentClassDetail `json:"students"`
+	Tasks    []*taskClassDetails   `json:"tasks"`
+}
+
+type lessonClassDetails struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type studentClassDetail struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type taskClassDetails struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+func GetClassPage(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	p := new(getClassPayload)
+	p.Name = cl.Name
+	p.Subject = cl.SubjectName
+
+	convertedStudents := make([]*studentClassDetail, 0)
+
+	for _, cs := range cl.Students {
+		convertedStudents = append(convertedStudents, &studentClassDetail{
+			Name: fmt.Sprintf("%v %v", cs.FirstName, cs.LastName),
+			ID:   cs.ID.String(),
+		})
+	}
+
+	p.Students = convertedStudents
+
+	var wg = new(sync.WaitGroup)
+	wg.Add(2)
+	go getTasks(cid, p, wg)
+	go getLessons(cid, p, wg)
+	wg.Wait()
+
+	return c.JSON(p)
+}
+
+func getClassDetails(accID, classID string) *model.Class {
+	// Get class details
+	var class = new(model.Class)
+	// TODO: Handle errors
+	res := db.Conn.Preload("Students").Where("account_id = ?", accID).Where("id = ?", classID).First(class)
+	if res.RowsAffected == 0 {
+		return nil
+	}
+
+	return class
+}
+
+func getTasks(cid string, p *getClassPayload, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// Get task details
+	var tasks = new([]model.Task)
+	// TODO: Handle errors
+	db.Conn.Where("class_id = ?", cid).Find(tasks)
+
+	returnTasks := make([]*taskClassDetails, 0)
+
+	for _, task := range *tasks {
+		returnTasks = append(returnTasks, &taskClassDetails{
+			ID:        task.ID.String(),
+			Name:      task.Name,
+			Timestamp: task.DueDate,
+		})
+	}
+
+	p.Lock()
+	p.Tasks = returnTasks
+	p.Unlock()
+}
+
+func getLessons(cid string, p *getClassPayload, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// Get task details
+	var lessons = new([]model.Lesson)
+	// TODO: Handle errors
+	db.Conn.Where("class_id = ?", cid).Find(lessons)
+
+	returnLessons := make([]*lessonClassDetails, 0)
+
+	for _, l := range *lessons {
+		returnLessons = append(returnLessons, &lessonClassDetails{
+			ID:        l.ID.String(),
+			Name:      l.Name,
+			Timestamp: l.StartTime,
+		})
+	}
+
+	p.Lock()
+	p.Lessons = returnLessons
+	p.Unlock()
 }
