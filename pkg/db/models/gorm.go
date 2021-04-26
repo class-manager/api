@@ -10,6 +10,6 @@ import (
 type BaseModel struct {
 	ID        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	CreatedAt time.Time `gorm:"autoCreateTime:nano"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime:nano"`
+	// UpdatedAt time.Time `gorm:"autoUpdateTime:nano"`
 	// DeletedAt gorm.DeletedAt `gorm:"index"`
 }
