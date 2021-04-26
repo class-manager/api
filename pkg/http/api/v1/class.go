@@ -173,3 +173,45 @@ func DeleteClass(c *fiber.Ctx) error {
 
 	return c.Status(http.StatusNoContent).Send(make([]byte, 0))
 }
+
+type updateClassPayload struct {
+	Name    *string `json:"name,omitempty"`
+	Subject *string `json:"subject,omitempty"`
+}
+
+func UpdateClass(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+
+	p := new(updateClassPayload)
+	if err := c.BodyParser(p); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if p.Name == nil && p.Subject == nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	cl := new(model.Class)
+	res := db.Conn.Where("account_id = ?", uid).Where("id = ?", cid).First(cl)
+
+	if res.RowsAffected == 0 {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	if p.Name != nil {
+		cl.Name = *p.Name
+		db.Conn.Model(&model.Class{}).Where("id = ?", cl.ID).Update("name", cl.Name)
+	}
+
+	if p.Subject != nil {
+		cl.SubjectName = *p.Subject
+		db.Conn.Model(&model.Class{}).Where("id = ?", cl.ID).Update("subject_name", cl.SubjectName)
+	}
+
+	return c.JSON(&dashboardClass{
+		ID:      cl.ID.String(),
+		Name:    cl.Name,
+		Subject: cl.SubjectName,
+	})
+}
