@@ -25,7 +25,7 @@ func Start() {
 	// https://github.com/gofiber/recipes/blob/master/graceful-shutdown/main.go
 	// Listen from a different goroutine
 	go func() {
-		if err := app.Listen(":3000"); err != nil {
+		if err := app.Listen(":3001"); err != nil {
 			log.Panic(err)
 		}
 	}()
@@ -75,4 +75,6 @@ func registerV1Routes(r fiber.Router) {
 	r.Post("/classes/:classid/tasks", middleware.Protected, api_v1.CreateTask)
 	r.Patch("/classes/:classid", middleware.Protected, api_v1.UpdateClass)
 	r.Delete("/classes/:classid", middleware.Protected, api_v1.DeleteClass)
+
+	r.Post("/classes/:classid/lessons", middleware.Protected, api_v1.CreateLesson)
 }
