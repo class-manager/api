@@ -1,6 +1,7 @@
 package api_v1
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -62,4 +63,64 @@ func CreateLesson(c *fiber.Ctx) error {
 		Name:      nl.Name,
 		Timestamp: nl.StartTime,
 	})
+}
+
+type getLessonClassData struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type getLessonPayload struct {
+	ID        string                `json:"id"`
+	Name      string                `json:"name"`
+	StartTime time.Time             `json:"startTime"`
+	EndTime   time.Time             `json:"endTime"`
+	ClassData getLessonClassData    `json:"classData"`
+	Students  []*studentClassDetail `json:"students"`
+}
+
+// GET /classes/:classid/lessons/:lessonid
+func GetLesson(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	lid := c.Params("lessonid")
+
+	// Get class data
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	// Get lesson data
+	l := new(model.Lesson)
+	ver := db.Conn.Where("id = ?", lid).First(l)
+	if ver.RowsAffected != 1 {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	// Create return data payload
+	p := new(getLessonPayload)
+	p.ClassData = getLessonClassData{
+		ID:   cl.ID.String(),
+		Name: cl.Name,
+	}
+	p.EndTime = l.EndTime
+	p.ID = l.ID.String()
+	p.Name = l.Name
+	p.StartTime = l.StartTime
+
+	// Convert students
+	convertedStudents := make([]*studentClassDetail, 0)
+
+	for _, cs := range cl.Students {
+		convertedStudents = append(convertedStudents, &studentClassDetail{
+			Name: fmt.Sprintf("%v %v", cs.FirstName, cs.LastName),
+			ID:   cs.ID.String(),
+		})
+	}
+
+	p.Students = convertedStudents
+
+	return c.JSON(p)
 }
