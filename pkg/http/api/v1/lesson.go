@@ -124,3 +124,24 @@ func GetLesson(c *fiber.Ctx) error {
 
 	return c.JSON(p)
 }
+
+// DELETE /classes/:classid/lessons/:lessonid
+func DeleteLesson(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	lid := c.Params("lessonid")
+
+	// Get class data
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	res := db.Conn.Where("class_id = ?", cid).Where("id = ?", lid).Delete(&model.Lesson{})
+	if res.RowsAffected == 0 {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	return c.Status(http.StatusNoContent).Send(make([]byte, 0))
+}
