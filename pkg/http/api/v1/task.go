@@ -18,6 +18,12 @@ type createTaskPayload struct {
 	MaxMark     int32      `json:"maxMark" validate:"required"`
 }
 
+type returnTask struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Class string `json:"class"`
+}
+
 func CreateTask(c *fiber.Ctx) error {
 	cuid, err := uuid.FromString(c.Params("classid"))
 	if err != nil {
@@ -63,7 +69,7 @@ func CreateTask(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
-	return c.Status(http.StatusCreated).JSON(&dashboardTask{
+	return c.Status(http.StatusCreated).JSON(&returnTask{
 		ID:    nt.ID.String(),
 		Name:  nt.Name,
 		Class: class.Name,

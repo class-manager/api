@@ -13,9 +13,9 @@ type dashboardClass struct {
 }
 
 type dashboardTask struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Class string `json:"class"`
+	ID    string         `json:"id"`
+	Name  string         `json:"name"`
+	Class dashboardClass `json:"class"`
 }
 
 type getDashboardReturnPayload struct {
@@ -47,9 +47,13 @@ func GetDashboardInfo(c *fiber.Ctx) error {
 
 	for _, task := range *tasks {
 		returnTasks = append(returnTasks, &dashboardTask{
-			ID:    task.ID.String(),
-			Name:  task.Name,
-			Class: task.Class.Name,
+			ID:   task.ID.String(),
+			Name: task.Name,
+			Class: dashboardClass{
+				ID:      task.Class.ID.String(),
+				Name:    task.Class.Name,
+				Subject: task.Class.SubjectName,
+			},
 		})
 	}
 
