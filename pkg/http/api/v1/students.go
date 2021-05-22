@@ -2,7 +2,6 @@ package api_v1
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -95,7 +94,7 @@ func GetStudents(c *fiber.Ctx) error {
 	return c.JSON(returnStudents)
 }
 
-type addStudentsToClassPayload struct {
+type studentIDList struct {
 	Students []string `json:"students" validate:"required,unique"`
 }
 
@@ -110,7 +109,7 @@ func AddStudentsToClass(c *fiber.Ctx) error {
 		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
 	}
 
-	ss := new(addStudentsToClassPayload)
+	ss := new(studentIDList)
 	if err := c.BodyParser(ss); err != nil {
 		return c.SendStatus(http.StatusBadRequest)
 	}
@@ -154,6 +153,39 @@ func AddStudentsToClass(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
-	log.Printf("students: %#+v\n", len(*students))
+	return c.SendStatus(http.StatusOK)
+}
+
+// DELETE /api/v1/classes/:classid/students
+func DeleteStudentsFromClass(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	ss := new(studentIDList)
+	if err := c.BodyParser(ss); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if err := validate.Struct(ss); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	tx := db.Conn.Begin()
+	for _, id := range ss.Students {
+		tx.Exec("DELETE FROM students_classes WHERE student_id = ? AND class_id = ?", id, cid)
+	}
+
+	res := tx.Commit()
+	if res.Error != nil {
+		tx.Rollback()
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
 	return c.SendStatus(http.StatusOK)
 }
