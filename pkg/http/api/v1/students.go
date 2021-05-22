@@ -1,6 +1,7 @@
 package api_v1
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -63,4 +64,29 @@ func CreateStudent(c *fiber.Ctx) error {
 		GeneralNote:     s.GeneralNote,
 		StudentNumber:   s.StudentNumber,
 	})
+}
+
+// GET /api/v1/students
+func GetStudents(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	term := c.Query("name")
+
+	var students = new([]model.Student)
+
+	db.Conn.Where("created_by_id = ?", uid).Where(db.Conn.Where("first_name LIKE ?", fmt.Sprintf("%%%v%%", term)).Or("last_name LIKE ?", fmt.Sprintf("%%%v%%", term))).Find(students)
+
+	returnStudents := make([]*createStudentPayload, 0)
+
+	for _, s := range *students {
+		returnStudents = append(returnStudents, &createStudentPayload{
+			FirstName:       s.FirstName,
+			LastName:        s.LastName,
+			DOB:             s.DOB,
+			GraduatingClass: s.GraduatingClass,
+			GeneralNote:     &s.GeneralNote,
+			StudentNumber:   &s.StudentNumber,
+		})
+	}
+
+	return c.JSON(returnStudents)
 }
