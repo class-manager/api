@@ -71,12 +71,13 @@ type getLessonClassData struct {
 }
 
 type getLessonPayload struct {
-	ID        string                `json:"id"`
-	Name      string                `json:"name"`
-	StartTime time.Time             `json:"startTime"`
-	EndTime   time.Time             `json:"endTime"`
-	ClassData getLessonClassData    `json:"classData"`
-	Students  []*studentClassDetail `json:"students"`
+	ID          string                `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	StartTime   time.Time             `json:"startTime"`
+	EndTime     time.Time             `json:"endTime"`
+	ClassData   getLessonClassData    `json:"classData"`
+	Students    []*studentClassDetail `json:"students"`
 }
 
 // GET /classes/:classid/lessons/:lessonid
@@ -109,6 +110,7 @@ func GetLesson(c *fiber.Ctx) error {
 	p.ID = l.ID.String()
 	p.Name = l.Name
 	p.StartTime = l.StartTime
+	p.Description = l.Description
 
 	// Convert students
 	convertedStudents := make([]*studentClassDetail, 0)
