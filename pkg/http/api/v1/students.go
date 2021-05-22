@@ -2,6 +2,7 @@ package api_v1
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 )
 
 type createStudentPayload struct {
+	ID              string    `json:"id"`
 	FirstName       string    `json:"firstName" validate:"required"`
 	LastName        string    `json:"lastName" validate:"required"`
 	DOB             time.Time `json:"dob" validate:"required"`
@@ -79,6 +81,7 @@ func GetStudents(c *fiber.Ctx) error {
 
 	for _, s := range *students {
 		returnStudents = append(returnStudents, &createStudentPayload{
+			ID:              s.ID.String(),
 			FirstName:       s.FirstName,
 			LastName:        s.LastName,
 			DOB:             s.DOB,
@@ -89,4 +92,67 @@ func GetStudents(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(returnStudents)
+}
+
+type addStudentsToClassPayload struct {
+	Students []string `json:"students" validate:"required,unique"`
+}
+
+// POST /api/v1/classes/:classid/students
+func AddStudentsToClass(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	ss := new(addStudentsToClassPayload)
+	if err := c.BodyParser(ss); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if err := validate.Struct(ss); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	// Find all students in the list of ids provided
+	var students = new([]model.Student)
+	db.Conn.Preload("Classes").Where("created_by_id = ?", uid).Where("id IN ?", ss.Students).Find(students)
+
+	// Remove all students from list who are already part of the class
+	nss := make([]model.Student, 0)
+	for _, s := range *students {
+		add := true
+		for _, c := range s.Classes {
+			if c.ID == cl.ID {
+				add = false
+			}
+		}
+
+		if add {
+			nss = append(nss, s)
+		}
+	}
+
+	// Add the students to the set class
+	for _, s := range nss {
+		s.Classes = append(s.Classes, cl)
+	}
+
+	tx := db.Conn.Begin()
+	for _, s := range nss {
+		tx.Exec("INSERT INTO students_classes VALUES (?, ?)", s.ID, cl.ID)
+	}
+
+	res := tx.Commit()
+	if res.Error != nil {
+		tx.Rollback()
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	log.Printf("students: %#+v\n", len(*students))
+	return c.SendStatus(http.StatusOK)
 }
