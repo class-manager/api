@@ -166,6 +166,9 @@ func DeleteClass(c *fiber.Ctx) error {
 	cid := c.Params("classid")
 
 	res := db.Conn.Where("account_id = ?", uid).Where("id = ?", cid).Delete(&model.Class{})
+	if res.Error != nil {
+		return c.Status(http.StatusBadRequest).SendString("You cannot delete a class while students are still part of it.")
+	}
 
 	if res.RowsAffected == 0 {
 		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
