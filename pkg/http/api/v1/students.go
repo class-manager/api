@@ -59,6 +59,7 @@ func CreateStudent(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(&createStudentPayload{
+		ID:              ns.ID.String(),
 		FirstName:       s.FirstName,
 		LastName:        s.LastName,
 		DOB:             s.DOB,
