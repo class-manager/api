@@ -43,11 +43,11 @@ func CreateStudent(c *fiber.Ctx) error {
 	}
 
 	if s.GeneralNote != nil {
-		ns.GeneralNote = *s.GeneralNote
+		ns.GeneralNote = s.GeneralNote
 	}
 
 	if s.StudentNumber != nil {
-		ns.StudentNumber = *s.StudentNumber
+		ns.StudentNumber = s.StudentNumber
 	}
 
 	// Create the task
@@ -86,8 +86,8 @@ func GetStudents(c *fiber.Ctx) error {
 			LastName:        s.LastName,
 			DOB:             s.DOB,
 			GraduatingClass: s.GraduatingClass,
-			GeneralNote:     &s.GeneralNote,
-			StudentNumber:   &s.StudentNumber,
+			GeneralNote:     s.GeneralNote,
+			StudentNumber:   s.StudentNumber,
 		})
 	}
 
@@ -211,4 +211,47 @@ func GetStudentsFromClass(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(d)
+}
+
+type studentLessonPayload struct {
+	ID              string    `json:"id"`
+	FirstName       string    `json:"firstName"`
+	LastName        string    `json:"lastName"`
+	DOB             time.Time `json:"dob"`
+	GeneralNote     *string   `json:"generalNote"`
+	BehaviouralNote *string   `json:"behaviouralNote"`
+}
+
+// GET Protected::/classes/:classid/lessons/:lessonid/student/:studentid
+func GetStudentForLesson(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	lid := c.Params("lessonid")
+	sid := c.Params("studentid")
+
+	// Check if the student exists
+	s := new(model.Student)
+	db.Conn.Where("id = ?", sid).Where("created_by_id = ?", uid).Find(sid)
+
+	if s == nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	// Student exists, get notes for this student
+	bn := new(model.BehaviourNote)
+	db.Conn.Where("lesson_id = ?", lid).Where("student_id = ?", sid).Find(bn)
+
+	// Return data
+	rd := studentLessonPayload{
+		GeneralNote: s.GeneralNote,
+		ID:          s.ID.String(),
+		FirstName:   s.FirstName,
+		LastName:    s.LastName,
+		DOB:         s.DOB,
+	}
+
+	if bn != nil {
+		rd.BehaviouralNote = &bn.Note
+	}
+
+	return c.JSON(rd)
 }
