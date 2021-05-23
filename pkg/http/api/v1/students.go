@@ -189,3 +189,26 @@ func DeleteStudentsFromClass(c *fiber.Ctx) error {
 
 	return c.SendStatus(http.StatusOK)
 }
+
+// GET /api/v1/classes/:classid/students
+func GetStudentsFromClass(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	d := make([]*studentClassDetail, 0)
+
+	for _, s := range cl.Students {
+		d = append(d, &studentClassDetail{
+			ID:   s.ID.String(),
+			Name: fmt.Sprintf("%v %v", s.FirstName, s.LastName),
+		})
+	}
+
+	return c.JSON(d)
+}
