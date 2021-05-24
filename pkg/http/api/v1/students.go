@@ -260,3 +260,77 @@ func GetStudentForLesson(c *fiber.Ctx) error {
 
 	return c.JSON(rd)
 }
+
+type updateStudentForLessonDetails struct {
+	BehaviourNote *string `json:"behaviouralNote"`
+}
+
+// PATCH Protected::/classes/:classid/lessons/:lessonid/student/:studentid
+func UpdateStudentForLesson(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	lid := c.Params("lessonid")
+	sid := c.Params("studentid")
+
+	// Parse new details
+	pd := new(updateStudentForLessonDetails)
+	if err := c.BodyParser(pd); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	// Check if the student exists
+	s := new(model.Student)
+	db.Conn.Where("id = ?", sid).Where("created_by_id = ?", uid).First(s)
+
+	if s.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	// Student exists, get notes for this student
+	bn := new(model.BehaviourNote)
+	db.Conn.Where("lesson_id = ?", lid).Where("student_id = ?", sid).Find(bn)
+
+	// Update data
+	if pd.BehaviourNote != nil {
+		if bn.ID != uuid.Nil {
+			bn.Note = *pd.BehaviourNote
+
+			res := db.Conn.Save(bn)
+			if res.Error != nil {
+				return c.SendStatus(http.StatusInternalServerError)
+			}
+		} else {
+			bn = &model.BehaviourNote{
+				Note:      *pd.BehaviourNote,
+				LessonID:  uuid.FromStringOrNil(lid),
+				StudentID: s.ID,
+			}
+			res := db.Conn.Create(bn)
+
+			if res.Error != nil {
+				return c.SendStatus(http.StatusInternalServerError)
+			}
+		}
+		// Delete the behaviour note if it exists
+	} else if bn.ID != uuid.Nil {
+		db.Conn.Delete(bn)
+	}
+
+	// Return data
+	rd := studentLessonPayload{
+		GeneralNote:     s.GeneralNote,
+		ID:              s.ID.String(),
+		BHID:            nil,
+		FirstName:       s.FirstName,
+		LastName:        s.LastName,
+		DOB:             s.DOB,
+		BehaviouralNote: nil,
+	}
+
+	if bn.ID != uuid.Nil {
+		bhid := bn.ID.String()
+		rd.BHID = &bhid
+		rd.BehaviouralNote = &bn.Note
+	}
+
+	return c.JSON(rd)
+}
