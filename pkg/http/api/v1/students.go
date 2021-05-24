@@ -215,6 +215,7 @@ func GetStudentsFromClass(c *fiber.Ctx) error {
 
 type studentLessonPayload struct {
 	ID              string    `json:"id"`
+	BHID            *string   `json:"bhid"`
 	FirstName       string    `json:"firstName"`
 	LastName        string    `json:"lastName"`
 	DOB             time.Time `json:"dob"`
@@ -244,6 +245,7 @@ func GetStudentForLesson(c *fiber.Ctx) error {
 	rd := studentLessonPayload{
 		GeneralNote:     s.GeneralNote,
 		ID:              s.ID.String(),
+		BHID:            nil,
 		FirstName:       s.FirstName,
 		LastName:        s.LastName,
 		DOB:             s.DOB,
@@ -251,6 +253,8 @@ func GetStudentForLesson(c *fiber.Ctx) error {
 	}
 
 	if bn.ID != uuid.Nil {
+		bhid := bn.ID.String()
+		rd.BHID = &bhid
 		rd.BehaviouralNote = &bn.Note
 	}
 
