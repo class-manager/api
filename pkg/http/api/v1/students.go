@@ -94,6 +94,33 @@ func GetStudents(c *fiber.Ctx) error {
 	return c.JSON(returnStudents)
 }
 
+// GET /api/v1/students/:studentid
+func GetStudent(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	sid := c.Params("studentid")
+
+	s := new(model.Student)
+
+	res := db.Conn.Where("created_by_id = ?", uid).Where("id = ?", sid).First(s)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	if s.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	return c.JSON(&createStudentPayload{
+		ID:              s.ID.String(),
+		FirstName:       s.FirstName,
+		LastName:        s.LastName,
+		DOB:             s.DOB,
+		GraduatingClass: s.GraduatingClass,
+		GeneralNote:     s.GeneralNote,
+		StudentNumber:   s.StudentNumber,
+	})
+}
+
 type studentIDList struct {
 	Students []string `json:"students" validate:"required,unique"`
 }
