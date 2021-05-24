@@ -40,6 +40,7 @@ func CreateStudent(c *fiber.Ctx) error {
 		DOB:             s.DOB,
 		GraduatingClass: s.GraduatingClass,
 		CreatedByID:     uuid.FromStringOrNil(uid),
+		StudentNumber:   s.StudentNumber,
 	}
 
 	if s.GeneralNote != nil {
@@ -59,6 +60,58 @@ func CreateStudent(c *fiber.Ctx) error {
 
 	return c.JSON(&createStudentPayload{
 		ID:              ns.ID.String(),
+		FirstName:       s.FirstName,
+		LastName:        s.LastName,
+		DOB:             s.DOB,
+		GraduatingClass: s.GraduatingClass,
+		GeneralNote:     s.GeneralNote,
+		StudentNumber:   s.StudentNumber,
+	})
+}
+
+// PATCH /api/v1/students/:studentid
+func UpdateStudent(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	sid := c.Params("studentid")
+
+	s := new(createStudentPayload)
+	if err := c.BodyParser(s); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if err := validate.Struct(s); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	cs := new(model.Student)
+	db.Conn.Where("id = ?", sid).Where("created_by_id = ?", uid).First(cs)
+
+	if cs.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	cs.FirstName = s.FirstName
+	cs.LastName = s.LastName
+	cs.DOB = s.DOB
+	cs.GraduatingClass = s.GraduatingClass
+
+	if s.GeneralNote != nil {
+		cs.GeneralNote = s.GeneralNote
+	}
+
+	if s.StudentNumber != nil {
+		cs.StudentNumber = s.StudentNumber
+	}
+
+	// Create the task
+	res := db.Conn.Save(cs)
+
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.JSON(&createStudentPayload{
+		ID:              cs.ID.String(),
 		FirstName:       s.FirstName,
 		LastName:        s.LastName,
 		DOB:             s.DOB,
@@ -183,6 +236,26 @@ func AddStudentsToClass(c *fiber.Ctx) error {
 	return c.SendStatus(http.StatusOK)
 }
 
+// DELETE /api/v1/students/:studentid
+func DeleteStudent(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	sid := c.Params("studentid")
+
+	tx := db.Conn.Begin()
+	tx.Exec("DELETE FROM students_classes WHERE student_id = (SELECT id FROM students WHERE id = ? AND created_by_id = ?)", sid, uid)
+	tx.Exec("DELETE FROM behaviour_notes WHERE student_id = (SELECT id FROM students WHERE id = ? AND created_by_id = ?)", sid, uid)
+	tx.Exec("DELETE FROM task_results WHERE student_id = (SELECT id FROM students WHERE id = ? AND created_by_id = ?) ", sid, uid)
+	tx.Exec("DELETE FROM students WHERE id = ? AND created_by_id = ?", sid, uid)
+
+	res := tx.Commit()
+	if res.Error != nil {
+		tx.Rollback()
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.SendStatus(http.StatusOK)
+}
+
 // DELETE /api/v1/classes/:classid/students
 func DeleteStudentsFromClass(c *fiber.Ctx) error {
 	uid := c.Locals("uid").(string)
@@ -204,11 +277,9 @@ func DeleteStudentsFromClass(c *fiber.Ctx) error {
 	}
 
 	tx := db.Conn.Begin()
-	for _, id := range ss.Students {
-		tx.Exec("DELETE FROM students_classes WHERE student_id = ? AND class_id = ?", id, cid)
-		tx.Exec("DELETE FROM behaviour_notes WHERE student_id = ? AND lesson_id IN (SELECT id FROM lessons WHERE class_id = ?)", id, cid)
-		tx.Exec("DELETE FROM task_results WHERE student_id = ? AND task_id = ? IN (SELECT id FROM tasks WHERE class_id = ?)", id, cid)
-	}
+	tx.Exec("DELETE FROM students_classes WHERE student_id IN (SELECT id FROM students WHERE id IN ? AND created_by_id = ?) AND class_id = ?", ss.Students, uid, cid)
+	tx.Exec("DELETE FROM behaviour_notes WHERE student_id IN (SELECT id FROM students WHERE id IN ? AND created_by_id = ?) AND lesson_id IN (SELECT id FROM lessons WHERE class_id = ?)", ss.Students, uid, cid)
+	tx.Exec("DELETE FROM task_results WHERE student_id IN (SELECT id FROM students WHERE id IN ? AND created_by_id = ?) AND task_id IN (SELECT id FROM tasks WHERE class_id = ?)", ss.Students, uid, cid)
 
 	res := tx.Commit()
 	if res.Error != nil {
