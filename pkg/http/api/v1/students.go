@@ -230,9 +230,9 @@ func GetStudentForLesson(c *fiber.Ctx) error {
 
 	// Check if the student exists
 	s := new(model.Student)
-	db.Conn.Where("id = ?", sid).Where("created_by_id = ?", uid).Find(sid)
+	db.Conn.Where("id = ?", sid).Where("created_by_id = ?", uid).First(s)
 
-	if s == nil {
+	if s.ID == uuid.Nil {
 		return c.SendStatus(http.StatusNotFound)
 	}
 
@@ -242,14 +242,15 @@ func GetStudentForLesson(c *fiber.Ctx) error {
 
 	// Return data
 	rd := studentLessonPayload{
-		GeneralNote: s.GeneralNote,
-		ID:          s.ID.String(),
-		FirstName:   s.FirstName,
-		LastName:    s.LastName,
-		DOB:         s.DOB,
+		GeneralNote:     s.GeneralNote,
+		ID:              s.ID.String(),
+		FirstName:       s.FirstName,
+		LastName:        s.LastName,
+		DOB:             s.DOB,
+		BehaviouralNote: nil,
 	}
 
-	if bn != nil {
+	if bn.ID != uuid.Nil {
 		rd.BehaviouralNote = &bn.Note
 	}
 

@@ -84,7 +84,7 @@ func registerV1Routes(r fiber.Router) {
 	r.Get("/classes/:classid/lessons/:lessonid", middleware.Protected, api_v1.GetLesson)
 	r.Delete("/classes/:classid/lessons/:lessonid", middleware.Protected, api_v1.DeleteLesson)
 
-	r.Get("/classes/:classid/lessons/:lessonid/student/:studentid", middleware.Protected, api_v1.GetStudentForLesson)
+	r.Get("/classes/:classid/lessons/:lessonid/students/:studentid", middleware.Protected, api_v1.GetStudentForLesson)
 
 	r.Get("/students", middleware.Protected, api_v1.GetStudents)
 	r.Post("/students", middleware.Protected, api_v1.CreateStudent)
