@@ -179,6 +179,8 @@ func DeleteStudentsFromClass(c *fiber.Ctx) error {
 	tx := db.Conn.Begin()
 	for _, id := range ss.Students {
 		tx.Exec("DELETE FROM students_classes WHERE student_id = ? AND class_id = ?", id, cid)
+		tx.Exec("DELETE FROM behaviour_notes WHERE student_id = ? AND lesson_id IN (SELECT id FROM lessons WHERE class_id = ?)", id, cid)
+		tx.Exec("DELETE FROM task_results WHERE student_id = ? AND task_id = ? IN (SELECT id FROM tasks WHERE class_id = ?)", id, cid)
 	}
 
 	res := tx.Commit()
