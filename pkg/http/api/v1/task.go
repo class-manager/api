@@ -257,3 +257,42 @@ func UpdateTask(c *fiber.Ctx) error {
 
 	return c.JSON(rd)
 }
+
+// PATCH /api/v1/classes/:classid/tasks/:taskid
+func DeleteTask(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	tid := c.Params("taskid")
+
+	cl := getClassDetails(uid, cid)
+
+	// Get class and ensure it exists
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	// Ensure task exists
+	t := new(model.Task)
+
+	res := db.Conn.Where("id = ?", tid).Where("class_id = ?", cid).First(t)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	if t.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	// Delete task and all related records
+	tx := db.Conn.Begin()
+	tx.Exec("DELETE FROM task_results WHERE task_id = ?", tid)
+	tx.Delete(t)
+
+	res = tx.Commit()
+	if res.Error != nil {
+		tx.Rollback()
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.SendStatus(http.StatusNoContent)
+}

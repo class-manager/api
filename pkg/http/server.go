@@ -76,6 +76,7 @@ func registerV1Routes(r fiber.Router) {
 	r.Post("/classes/:classid/tasks", middleware.Protected, api_v1.CreateTask)
 	r.Get("/classes/:classid/tasks/:taskid", middleware.Protected, api_v1.GetTask)
 	r.Patch("/classes/:classid/tasks/:taskid", middleware.Protected, api_v1.UpdateTask)
+	r.Delete("/classes/:classid/tasks/:taskid", middleware.Protected, api_v1.DeleteTask)
 
 	r.Patch("/classes/:classid", middleware.Protected, api_v1.UpdateClass)
 	r.Delete("/classes/:classid", middleware.Protected, api_v1.DeleteClass)
