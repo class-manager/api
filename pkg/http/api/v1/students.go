@@ -147,6 +147,23 @@ func GetStudents(c *fiber.Ctx) error {
 	return c.JSON(returnStudents)
 }
 
+type studentsClasses struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Subject string `json:"subject"`
+}
+
+type getSpecificStudentPayload struct {
+	ID              string            `json:"id"`
+	FirstName       string            `json:"firstName" validate:"required"`
+	LastName        string            `json:"lastName" validate:"required"`
+	DOB             time.Time         `json:"dob" validate:"required"`
+	GraduatingClass uint32            `json:"graduatingClass" validate:"required"`
+	GeneralNote     *string           `json:"generalNote"`
+	StudentNumber   *string           `json:"studentNumber"`
+	Classes         []studentsClasses `json:"classes"`
+}
+
 // GET /api/v1/students/:studentid
 func GetStudent(c *fiber.Ctx) error {
 	uid := c.Locals("uid").(string)
@@ -154,7 +171,7 @@ func GetStudent(c *fiber.Ctx) error {
 
 	s := new(model.Student)
 
-	res := db.Conn.Where("created_by_id = ?", uid).Where("id = ?", sid).First(s)
+	res := db.Conn.Preload("Classes").Where("created_by_id = ?", uid).Where("id = ?", sid).First(s)
 	if res.Error != nil {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
@@ -163,7 +180,16 @@ func GetStudent(c *fiber.Ctx) error {
 		return c.SendStatus(http.StatusNotFound)
 	}
 
-	return c.JSON(&createStudentPayload{
+	classes := make([]studentsClasses, 0)
+	for _, c := range s.Classes {
+		classes = append(classes, studentsClasses{
+			ID:      c.ID.String(),
+			Name:    c.Name,
+			Subject: c.SubjectName,
+		})
+	}
+
+	return c.JSON(&getSpecificStudentPayload{
 		ID:              s.ID.String(),
 		FirstName:       s.FirstName,
 		LastName:        s.LastName,
@@ -171,6 +197,7 @@ func GetStudent(c *fiber.Ctx) error {
 		GraduatingClass: s.GraduatingClass,
 		GeneralNote:     s.GeneralNote,
 		StudentNumber:   s.StudentNumber,
+		Classes:         classes,
 	})
 }
 
