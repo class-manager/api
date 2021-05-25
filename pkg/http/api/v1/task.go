@@ -47,15 +47,16 @@ func CreateTask(c *fiber.Ctx) error {
 
 	// New Task
 	nt := &model.Task{
-		Name:    d.Name,
-		Open:    false,
-		DueDate: d.DueDate,
-		MaxMark: d.MaxMark,
-		ClassID: class.ID,
+		Name:     d.Name,
+		Open:     true,
+		DueDate:  d.DueDate,
+		MaxMark:  d.MaxMark,
+		ClassID:  class.ID,
+		OpenDate: time.Now(),
 	}
 
 	if d.Description != nil {
-		nt.Description = *d.Description
+		nt.Description = d.Description
 	}
 
 	if d.OpenDate != nil {
@@ -74,4 +75,82 @@ func CreateTask(c *fiber.Ctx) error {
 		Name:  nt.Name,
 		Class: class.Name,
 	})
+}
+
+type studentResultData struct {
+	ID    string   `json:"id"`
+	Score *float64 `json:"score"`
+}
+
+type taskPageReturnData struct {
+	Name           string              `json:"name"`
+	Description    *string             `json:"description"`
+	OpenDate       time.Time           `json:"openDate"`
+	DueDate        time.Time           `json:"dueDate"`
+	MaxMark        int32               `json:"maxMark"`
+	StudentResults []studentResultData `json:"studentResults"`
+}
+
+func GetTask(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	tid := c.Params("taskid")
+
+	cl := getClassDetails(uid, cid)
+
+	// Get class and ensure it exists
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	// Ensure task exists
+	t := new(model.Task)
+
+	res := db.Conn.Where("id = ?", tid).Where("class_id = ?", cid).First(t)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	if t.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	// Get all task results for this task
+	tr := new([]model.TaskResult)
+	res = db.Conn.Where("task_id = ?", tid).Find(tr)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	// Get map of task results
+	resultsMap := make(map[string]float64)
+	for _, r := range *tr {
+		resultsMap[r.ID.String()] = r.Mark
+	}
+
+	// Create list of student results to return
+	sr := make([]studentResultData, 0)
+	for _, s := range cl.Students {
+		r := &studentResultData{ID: s.ID.String(), Score: nil}
+
+		if val, ok := resultsMap[s.ID.String()]; ok {
+			r.Score = &val
+		}
+	}
+
+	// Return data to user
+	rd := &taskPageReturnData{
+		Name:           t.Name,
+		Description:    nil,
+		OpenDate:       t.OpenDate,
+		DueDate:        t.DueDate,
+		MaxMark:        t.MaxMark,
+		StudentResults: sr,
+	}
+
+	if t.Description != nil {
+		rd.Description = t.Description
+	}
+
+	return c.JSON(rd)
 }

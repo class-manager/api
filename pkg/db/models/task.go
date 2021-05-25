@@ -10,7 +10,7 @@ import (
 type Task struct {
 	BaseModel
 	Name        string `gorm:"not null"`
-	Description string
+	Description *string
 	Open        bool
 	OpenDate    time.Time
 	DueDate     time.Time `gorm:"not null"`
