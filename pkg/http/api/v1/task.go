@@ -130,7 +130,7 @@ func GetTask(c *fiber.Ctx) error {
 	// Get map of task results
 	resultsMap := make(map[string]float64)
 	for _, r := range *tr {
-		resultsMap[r.ID.String()] = r.Mark
+		resultsMap[r.StudentID.String()] = r.Mark
 	}
 
 	// Create list of student results to return
@@ -223,7 +223,7 @@ func UpdateTask(c *fiber.Ctx) error {
 	// Get map of task results
 	resultsMap := make(map[string]float64)
 	for _, r := range *tr {
-		resultsMap[r.ID.String()] = r.Mark
+		resultsMap[r.StudentID.String()] = r.Mark
 	}
 
 	// Create list of student results to return
@@ -295,4 +295,116 @@ func DeleteTask(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(http.StatusNoContent)
+}
+
+type updateScoresData struct {
+	Scores []studentResultData `json:"scores"`
+}
+
+// PATCH /api/v1/classes/:classid/tasks/:taskid
+func UpdateTaskScores(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	tid := c.Params("taskid")
+
+	cl := getClassDetails(uid, cid)
+
+	// Get class and ensure it exists
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	// Ensure task exists
+	t := new(model.Task)
+
+	res := db.Conn.Where("id = ?", tid).Where("class_id = ?", cid).First(t)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	if t.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	d := new(updateScoresData)
+	if err := c.BodyParser(d); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if err := validate.Struct(d); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	// Begin transaction for handling this
+	tx := db.Conn.Begin()
+
+	// Delete all task_results
+	tx.Where("task_id = ?", tid).Delete(&model.TaskResult{})
+
+	resultsToBeAdded := make([]*model.TaskResult, 0)
+	// For all student results that do not have a null score
+	for _, r := range d.Scores {
+		if r.Score != nil {
+			resultsToBeAdded = append(resultsToBeAdded, &model.TaskResult{
+				Mark:      *r.Score,
+				StudentID: uuid.FromStringOrNil(r.ID),
+				TaskID:    uuid.FromStringOrNil(tid),
+			})
+		}
+	}
+
+	if len(resultsToBeAdded) > 0 {
+		tx.Create(resultsToBeAdded)
+	}
+
+	// Commit tx
+	res = tx.Commit()
+	if res.Error != nil {
+		tx.Rollback()
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	// Get all task results for this task
+	tr := new([]model.TaskResult)
+	res = db.Conn.Where("task_id = ?", tid).Find(tr)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	// Get map of task results
+	resultsMap := make(map[string]float64)
+	for _, r := range *tr {
+		resultsMap[r.StudentID.String()] = r.Mark
+	}
+
+	// Create list of student results to return
+	sr := make([]studentResultData, 0)
+	for _, s := range cl.Students {
+		r := studentResultData{
+			ID:    s.ID.String(),
+			Score: nil,
+			Name:  fmt.Sprintf("%v %v", s.FirstName, s.LastName),
+		}
+
+		if val, ok := resultsMap[s.ID.String()]; ok {
+			r.Score = &val
+		}
+
+		sr = append(sr, r)
+	}
+
+	// Return data to user
+	rd := &taskPageReturnData{
+		ID:             t.ID.String(),
+		Name:           t.Name,
+		Description:    nil,
+		OpenDate:       t.OpenDate,
+		DueDate:        t.DueDate,
+		MaxMark:        t.MaxMark,
+		StudentResults: sr,
+		ClassName:      cl.Name,
+		ClassID:        cl.ID.String(),
+	}
+
+	return c.JSON(rd)
 }
