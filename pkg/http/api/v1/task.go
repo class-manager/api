@@ -168,3 +168,92 @@ func GetTask(c *fiber.Ctx) error {
 
 	return c.JSON(rd)
 }
+
+// PATCH /api/v1/classes/:classid/tasks/:taskid
+func UpdateTask(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	tid := c.Params("taskid")
+
+	cl := getClassDetails(uid, cid)
+
+	// Get class and ensure it exists
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	// Ensure task exists
+	t := new(model.Task)
+
+	res := db.Conn.Where("id = ?", tid).Where("class_id = ?", cid).First(t)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	if t.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	d := new(taskPageReturnData)
+	if err := c.BodyParser(d); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if err := validate.Struct(d); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	t.Name = d.Name
+	t.Description = d.Description
+	t.DueDate = d.DueDate
+	t.MaxMark = d.MaxMark
+
+	res = db.Conn.Save(t)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	// Get all task results for this task
+	tr := new([]model.TaskResult)
+	res = db.Conn.Where("task_id = ?", tid).Find(tr)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	// Get map of task results
+	resultsMap := make(map[string]float64)
+	for _, r := range *tr {
+		resultsMap[r.ID.String()] = r.Mark
+	}
+
+	// Create list of student results to return
+	sr := make([]studentResultData, 0)
+	for _, s := range cl.Students {
+		r := studentResultData{
+			ID:    s.ID.String(),
+			Score: nil,
+			Name:  fmt.Sprintf("%v %v", s.FirstName, s.LastName),
+		}
+
+		if val, ok := resultsMap[s.ID.String()]; ok {
+			r.Score = &val
+		}
+
+		sr = append(sr, r)
+	}
+
+	// Return data to user
+	rd := &taskPageReturnData{
+		ID:             t.ID.String(),
+		Name:           t.Name,
+		Description:    nil,
+		OpenDate:       t.OpenDate,
+		DueDate:        t.DueDate,
+		MaxMark:        t.MaxMark,
+		StudentResults: sr,
+		ClassName:      cl.Name,
+		ClassID:        cl.ID.String(),
+	}
+
+	return c.JSON(rd)
+}
