@@ -85,6 +85,7 @@ type studentResultData struct {
 }
 
 type taskPageReturnData struct {
+	ID             string              `json:"id"`
 	Name           string              `json:"name"`
 	Description    *string             `json:"description"`
 	OpenDate       time.Time           `json:"openDate"`
@@ -150,6 +151,7 @@ func GetTask(c *fiber.Ctx) error {
 
 	// Return data to user
 	rd := &taskPageReturnData{
+		ID:             t.ID.String(),
 		Name:           t.Name,
 		Description:    nil,
 		OpenDate:       t.OpenDate,
