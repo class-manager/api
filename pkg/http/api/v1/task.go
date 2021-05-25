@@ -1,6 +1,7 @@
 package api_v1
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -79,6 +80,7 @@ func CreateTask(c *fiber.Ctx) error {
 
 type studentResultData struct {
 	ID    string   `json:"id"`
+	Name  string   `json:"name"`
 	Score *float64 `json:"score"`
 }
 
@@ -131,11 +133,17 @@ func GetTask(c *fiber.Ctx) error {
 	// Create list of student results to return
 	sr := make([]studentResultData, 0)
 	for _, s := range cl.Students {
-		r := &studentResultData{ID: s.ID.String(), Score: nil}
+		r := studentResultData{
+			ID:    s.ID.String(),
+			Score: nil,
+			Name:  fmt.Sprintf("%v %v", s.FirstName, s.LastName),
+		}
 
 		if val, ok := resultsMap[s.ID.String()]; ok {
 			r.Score = &val
 		}
+
+		sr = append(sr, r)
 	}
 
 	// Return data to user
