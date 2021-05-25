@@ -10,7 +10,7 @@ import (
 type Lesson struct {
 	BaseModel
 	Name        string `gorm:"not null"`
-	Description string
+	Description *string
 	StartTime   time.Time `gorm:"not null"`
 	EndTime     time.Time `gorm:"not null"`
 	Class       Class     `gorm:"constraint:OnDelete:CASCADE"`

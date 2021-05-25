@@ -41,14 +41,11 @@ func CreateLesson(c *fiber.Ctx) error {
 
 	// New Lesson
 	nl := &model.Lesson{
-		Name:      d.Name,
-		StartTime: d.StartTime,
-		EndTime:   d.EndTime,
-		ClassID:   class.ID,
-	}
-
-	if d.Description != nil {
-		nl.Description = *d.Description
+		Name:        d.Name,
+		StartTime:   d.StartTime,
+		EndTime:     d.EndTime,
+		ClassID:     class.ID,
+		Description: d.Description,
 	}
 
 	// Create the task
@@ -73,7 +70,7 @@ type getLessonClassData struct {
 type getLessonPayload struct {
 	ID          string                `json:"id"`
 	Name        string                `json:"name"`
-	Description string                `json:"description"`
+	Description *string               `json:"description"`
 	StartTime   time.Time             `json:"startTime"`
 	EndTime     time.Time             `json:"endTime"`
 	ClassData   getLessonClassData    `json:"classData"`
@@ -146,4 +143,49 @@ func DeleteLesson(c *fiber.Ctx) error {
 	}
 
 	return c.Status(http.StatusNoContent).Send(make([]byte, 0))
+}
+
+// PATCH /classes/:classid/lessons/:lessonid
+func UpdateLesson(c *fiber.Ctx) error {
+	uid := c.Locals("uid").(string)
+	cid := c.Params("classid")
+	lid := c.Params("lessonid")
+
+	d := new(createLessonPayload)
+	if err := c.BodyParser(d); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	if err := validate.Struct(d); err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
+
+	cl := getClassDetails(uid, cid)
+
+	if cl == nil {
+		return c.Status(http.StatusNotFound).Send(make([]byte, 0))
+	}
+
+	l := new(model.Lesson)
+
+	res := db.Conn.Where("id = ?", lid).First(l)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	if l.ID == uuid.Nil {
+		return c.SendStatus(http.StatusNotFound)
+	}
+
+	l.Name = d.Name
+	l.StartTime = d.StartTime
+	l.EndTime = d.EndTime
+	l.Description = d.Description
+
+	res = db.Conn.Save(l)
+	if res.Error != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.JSON(d)
 }
