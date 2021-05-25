@@ -223,6 +223,11 @@ func UpdateTask(c *fiber.Ctx) error {
 	// Get map of task results
 	resultsMap := make(map[string]float64)
 	for _, r := range *tr {
+		if r.Mark > float64(t.MaxMark) {
+			r.Mark = float64(t.MaxMark)
+		}
+
+		db.Conn.Save(r)
 		resultsMap[r.StudentID.String()] = r.Mark
 	}
 
