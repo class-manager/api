@@ -91,6 +91,8 @@ type taskPageReturnData struct {
 	DueDate        time.Time           `json:"dueDate"`
 	MaxMark        int32               `json:"maxMark"`
 	StudentResults []studentResultData `json:"studentResults"`
+	ClassName      string              `json:"className"`
+	ClassID        string              `json:"classID"`
 }
 
 func GetTask(c *fiber.Ctx) error {
@@ -154,6 +156,8 @@ func GetTask(c *fiber.Ctx) error {
 		DueDate:        t.DueDate,
 		MaxMark:        t.MaxMark,
 		StudentResults: sr,
+		ClassName:      cl.Name,
+		ClassID:        cl.ID.String(),
 	}
 
 	if t.Description != nil {
